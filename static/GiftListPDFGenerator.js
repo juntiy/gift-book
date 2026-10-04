@@ -226,10 +226,35 @@ class GiftRegistryPDF {
             pageData.forEach((item, i) => {
                 const colX = margin.left + i * colWidth;
                 const name = item.name.length === 2 ? item.name[0] + String.fromCharCode(0x3000) + item.name[1] : item.name;
+
+                // 姓名格分为三段：顶部序号（横向）、中部姓名（竖向）、底部自定义标签（横向）
+                const serialZoneHeight = 14;
+                const tagZoneHeight = 16;
+                const nameZoneHeight = Math.max(20, nameHeight - serialZoneHeight - tagZoneHeight);
+                const nameZoneY = line2Y + serialZoneHeight;
+                const tagZoneY = line2Y + nameHeight - tagZoneHeight;
+
+                // 序号：横向显示在姓名格顶部
+                if (item.serial != null) {
+                    this._drawText(page, String(item.serial), fonts.mainFont, {
+                        x: colX, y: line2Y, cellWidth: colWidth, cellHeight: serialZoneHeight,
+                        initialFontSize: 10, minFontSize: 6, color: numericColor, isVertical: false
+                    });
+                }
+                // 姓名：竖向显示在中间区域
                 this._drawText(page, name, fonts.mainFont, {
-                    x: colX, y: line2Y, cellWidth: colWidth, cellHeight: nameHeight,
+                    x: colX, y: nameZoneY, cellWidth: colWidth, cellHeight: nameZoneHeight,
                     initialFontSize: nameStyle.fontSize, minFontSize: 8, color: nameStyle.color, isVertical: true
                 });
+                // 自定义标签：横向显示在姓名格底部
+                const tagStr = (item.tags && item.tags.length) ? item.tags.join("、") : "";
+                if (tagStr) {
+                    this._drawText(page, tagStr, fonts.formalFont, {
+                        x: colX, y: tagZoneY, cellWidth: colWidth, cellHeight: tagZoneHeight,
+                        initialFontSize: 8, minFontSize: 5, color: numericColor, isVertical: false
+                    });
+                }
+
                 this._drawText(page, this.options.giftLabel, fonts.giftLabelFont, {
                     x: colX, y: line1Y, cellWidth: colWidth, cellHeight: giftTitleHeight,
                     initialFontSize: labelStyle.fontSize, minFontSize:8, color: labelStyle.color, isVertical: true
