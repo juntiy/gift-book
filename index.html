@@ -347,6 +347,87 @@
         letter-spacing: 0.5px;
         writing-mode: vertical-rl;
       }
+
+      /* ==================== 序号 + 自定义标签 ==================== */
+      /* 姓名格内部：纵向弹性布局，序号在姓名正上方 */
+      .name-cell-inner {
+        writing-mode: horizontal-tb;
+        text-orientation: mixed;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        width: 100%;
+        min-height: 100%;
+        padding: 4px 2px;
+        letter-spacing: normal;
+      }
+      .name-cell-inner .name {
+        writing-mode: vertical-lr;
+        text-orientation: mixed;
+        letter-spacing: 7px;
+      }
+      /* 序号：横向显示于姓名上方（字号/颜色/字体可在“礼簿字体与颜色”中设置） */
+      .serial-badge {
+        writing-mode: horizontal-tb;
+        text-orientation: mixed;
+        display: block;
+        font-size: var(--custom-serial-size, 13px);
+        font-weight: bold;
+        line-height: 1.3;
+        color: var(--custom-serial-color, var(--primary-color));
+        font-family: var(--custom-serial-font, "Microsoft YaHei", sans-serif);
+        margin-bottom: 4px;
+        opacity: 0.9;
+      }
+      /* 标签：横向排列的小标签 */
+      .tag-chips {
+        writing-mode: horizontal-tb;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 3px 4px;
+        margin-top: 5px;
+      }
+      .tag-chip {
+        font-size: clamp(9px, 1vw, 12px);
+        line-height: 1.4;
+        color: var(--button-text-color);
+        background: var(--link-hover-bg);
+        border: 1px solid var(--primary-border-color);
+        border-radius: 4px;
+        padding: 0 5px;
+        white-space: nowrap;
+        writing-mode: horizontal-tb;
+      }
+      /* 录入区标签选择器（通用，弹窗内复用） */
+      .entry-tag {
+        cursor: pointer;
+        font-size: 13px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--primary-border-color);
+        background: #fff;
+        color: var(--button-text-color);
+        user-select: none;
+        transition: all 0.15s;
+      }
+      .entry-tag.selected {
+        background: var(--button-bg-color);
+        color: #fff;
+        border-color: var(--button-bg-color);
+      }
+      /* 标签管理弹窗 */
+      .manage-tag-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border: 1px solid var(--primary-border-color);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        background: var(--primary-bg-light);
+      }
       /* ==================== 响应式 ==================== */
       @media (max-width: 700px) {
         .amount-numeric,
@@ -675,7 +756,10 @@
           <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-lg">
             <h2 class="text-2xl font-bold mb-4 text-center border-b pb-2">礼金录入</h2>
             <form id="add-gift-form" class="space-y-4">
-              <input type="text" id="guest-name" placeholder="姓名" required class="w-full p-3 border rounded-lg focus:ring-2 themed-ring" />
+              <div class="flex gap-2">
+                <input type="text" id="guest-name" placeholder="姓名" required class="flex-grow min-w-0 w-full p-3 border rounded-lg focus:ring-2 themed-ring" />
+                <input type="number" id="gift-serial" placeholder="序号" min="1" step="1" class="w-24 p-3 border rounded-lg focus:ring-2 themed-ring" title="序号（选填），不填将自动生成" />
+              </div>
               <input type="number" id="gift-amount" placeholder="金额 (元)" required min="0" max="999999999999" step="0.01" class="w-full p-3 border rounded-lg focus:ring-2 themed-ring" />
               <div class="flex flex-wrap items-center gap-x-2 gap-y-2">
                 <label class="text-sm font-medium text-gray-700 whitespace-nowrap">收款类型：</label>
@@ -698,6 +782,16 @@
               </div>
               <!-- 用于动态添加“礼品”、“关系”等输入框的容器 -->
               <div id="remark-inputs-container" class="space-y-2"></div>
+              <!-- 自定义标签 -->
+              <div class="flex flex-wrap items-center gap-x-1 gap-y-2">
+                <label class="text-sm font-medium text-gray-700 whitespace-nowrap">标签：</label>
+                <div id="tag-chips" class="flex flex-wrap gap-2"></div>
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="text" id="new-tag-input" placeholder="输入新标签后回车添加" class="flex-1 p-2 border rounded-lg focus:ring-2 themed-ring" />
+                <button type="button" id="add-tag-btn" class="themed-button-secondary px-3 py-2 rounded-lg text-sm whitespace-nowrap">添加标签</button>
+                <button type="button" id="manage-tags-btn" class="themed-button-secondary px-3 py-2 rounded-lg text-sm whitespace-nowrap">管理</button>
+              </div>
               <button type="submit" class="w-full themed-button-primary font-bold p-4 rounded-lg transition duration-300 text-lg">确认录入</button>
             </form>
             <div class="mt-6 pt-6 border-t">
@@ -721,6 +815,17 @@
                 </div>
               </div>
             </div>
+
+            <!-- 数据备份（防丢失） -->
+            <div class="mt-6 pt-6 border-t">
+              <h3 class="text-xl font-semibold mb-2">数据备份（防丢失）</h3>
+              <p class="text-xs text-gray-500 mb-3">礼簿数据都存在本机浏览器里。建议每次活动前后各导出一份 .json 备份，存到 U 盘或云盘；换电脑或重装时再“导入备份”即可原样恢复。</p>
+              <div class="flex gap-2">
+                <button id="backup-export-btn" class="w-full border themed-button-secondary p-3 rounded-lg">导出备份 (.json)</button>
+                <button id="backup-import-btn" class="w-full themed-button-primary p-3 rounded-lg">导入备份</button>
+                <input type="file" id="backup-import-input" accept="application/json,.json" class="hidden" />
+              </div>
+            </div>
           </div>
           <!-- 右侧展示区 -->
           <div class="lg:col-span-2">
@@ -732,6 +837,10 @@
                   <div><span class="font-bold text-md">总人数:</span> <span id="total-givers" class="text-xl font-bold themed-text">0</span></div>
                 </div>
                 <div class="flex items-center space-x-2 text-lg">
+                  <div class="flex items-center space-x-1 mr-2">
+                    <button id="sort-default-btn" class="text-xs px-2.5 py-1.5 border rounded-lg themed-button-secondary transition" title="按默认方式（宾客等级）排序">默认排序</button>
+                    <button id="sort-serial-btn" class="text-xs px-2.5 py-1.5 border rounded-lg themed-button-secondary transition" title="按序号从小到大排序">按序号 ↑</button>
+                  </div>
                   <button id="prev-page-btn" class="themed-button-primary p-2 disabled:bg-gray-300 rounded-full w-8 h-8 flex items-center justify-center">
                     <i class="ri-arrow-left-s-line"></i>
                   </button>
@@ -1573,10 +1682,23 @@
           const nameClasses = isAbolished ? "opacity-50" : "";
           const amountClasses = isAbolished ? "opacity-50 line-through" : "";
 
+          const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+          // 序号：优先使用记录自身保存的序号，否则按位置自动编号
+          const serialNum =
+            g.serial != null && g.serial !== "" && Number.isFinite(Number(g.serial))
+              ? Number(g.serial)
+              : giftIndex != null && giftIndex >= 0
+                ? giftIndex + 1
+                : null;
+          const serialHtml = serialNum != null ? `<div class="serial-badge">${serialNum}</div>` : "";
+          const tagsHtml = g.tags && g.tags.length
+            ? `<div class="tag-chips">${g.tags.map((t) => `<span class="tag-chip">${esc(t)}</span>`).join("")}</div>`
+            : "";
+
           const amountChinese = Utils.amountToChinese(g.amount);
           const displayName = g.name.length === 2 ? `${g.name[0]}\u3000${g.name[1]}` : g.name;
           return {
-            nameHTML: `<div class="name ${g.name.length > 4 ? "scale" : ""} ${nameClasses}">${displayName}</div>${statusIndicators}`,
+            nameHTML: `<div class="name-cell-inner">${serialHtml}<div class="name ${g.name.length > 4 ? "scale" : ""} ${nameClasses}">${displayName}</div>${tagsHtml}${statusIndicators}</div>`,
             amountHTML: `<div class="amount-chinese ${amountChinese.length > 16 ? "scale" : ""} ${amountClasses}">${amountChinese}</div>
                       <div class="amount-numeric ${Math.abs(g.amount).toString().length > 8 ? "scale" : ""} ${amountClasses}">￥${g.amount}</div>`,
             giftIndex,
@@ -1893,6 +2015,31 @@
 
             // id 升序（录入顺序）
             return (a.id || 0) - (b.id || 0);
+          });
+        }
+
+        /**
+         * 按序号从小到大排序礼金数组
+         * 排序逻辑：
+         * 1. 序号升序（无序号的记录排在最后）
+         * 2. 序号相同时按录入时间升序
+         */
+        sortGiftsBySerial() {
+          const app = this.app;
+          app.gifts.sort((a, b) => {
+            const aHas = a.data?.serial != null && Number.isFinite(Number(a.data.serial));
+            const bHas = b.data?.serial != null && Number.isFinite(Number(b.data.serial));
+            if (aHas && bHas) {
+              const diff = Number(a.data.serial) - Number(b.data.serial);
+              if (diff !== 0) return diff;
+            } else if (aHas) {
+              return -1;
+            } else if (bHas) {
+              return 1;
+            }
+            const ta = new Date(a.data?.timestamp || 0).getTime();
+            const tb = new Date(b.data?.timestamp || 0).getTime();
+            return ta - tb;
           });
         }
 
@@ -2333,13 +2480,15 @@
             // ====================== 4. 生成 PDF ======================
             app.pdfGenerator = new GiftRegistryPDF(generatorOptions);
 
-            const data = app.gifts.slice(startIndex, endIndex).map(({ data }) => ({
+            const data = app.gifts.slice(startIndex, endIndex).map(({ data }, idx) => ({
               name: data.name,
               amount: data.amount,
               type: data.type,
               remark: app.formatRemarkDisplay(data.remarkData) || null,
               abolished: !!data.abolished,
               amountText: Utils.amountToChinese(data.amount),
+              tags: Array.isArray(data.tags) ? data.tags : [],
+              serial: data.serial != null && data.serial !== "" && Number.isFinite(Number(data.serial)) ? Number(data.serial) : startIndex + idx + 1,
             }));
 
             const pdfBytes = await app.pdfGenerator.generate(data, generatorOptions);
@@ -2979,7 +3128,7 @@
 
           for (let i = 0; i < app.getItemsPerPage(); i++) {
             const gift = gifts[i];
-            const giftIndex = isPrint ? null : (app.currentPage - 1) * app.getItemsPerPage() + i;
+            const giftIndex = isPrint ? i : (app.currentPage - 1) * app.getItemsPerPage() + i;
 
             // 姓名单元格
             const nameCell = document.createElement("div");
@@ -3296,9 +3445,11 @@
             }
 
             dataToExport.push({
+              序号: g.data.serial != null && g.data.serial !== "" && Number.isFinite(Number(g.data.serial)) ? Number(g.data.serial) : i + 1,
               姓名: g.data.name,
               金额: g.data.amount,
               收款类型: g.data.type,
+              标签: (g.data.tags || []).join("、"),
               宾客等级: guestLevelName,
               备注: customRemark,
               礼品: giftRemark,
@@ -3330,9 +3481,11 @@
 
           // 调整列宽,为新增的列分配合适的宽度
           const columnWidths = [
+            { wch: 8 }, // 序号
             { wch: 10 }, // 姓名
             { wch: 12 }, // 金额
             { wch: 12 }, // 收款类型
+            { wch: 18 }, // 标签
             { wch: 10 }, // 宾客等级
             { wch: 30 }, // 备注(自定义)
             { wch: 20 }, // 礼品 (加宽一些)
@@ -3812,6 +3965,8 @@
           this.cachedStats = null;
           this.statsAreDirty = true;
           this.selectedRemarkPresets = new Set();
+          this._selectedTags = []; // 当前录入表单选中的标签
+          this.sortMode = "default"; // 排序模式：default=等级排序，serial=按序号排序
           this.pdfGenerator = null;
           this.isGeneratingPdf = false;
           this.allGiftsDecrypted = false;
@@ -3912,6 +4067,8 @@
         async startSession() {
           this.ui.elements.currentEventTitleEl.textContent = this.currentEvent.name;
           this.ui.applyTheme(this.currentEvent.theme);
+          this.ensureEventTags();
+          this.renderEntryTagChips();
 
           this.applyCustomGiftBookStyle();
 
@@ -4031,6 +4188,36 @@
           // 语音开关
           this.ui.elements.speechToggle.addEventListener("change", (e) => {
             this.isSpeechEnabled = e.target.checked;
+          });
+
+          // 自定义标签相关交互
+          const tagChipsEl = document.getElementById("tag-chips");
+          if (tagChipsEl) {
+            tagChipsEl.addEventListener("click", (e) => {
+              const chip = e.target.closest(".entry-tag");
+              if (chip) this.toggleEntryTag(chip.dataset.tag);
+            });
+          }
+          document.getElementById("add-tag-btn")?.addEventListener("click", () => this.addNewTagFromInput());
+          document.getElementById("new-tag-input")?.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              this.addNewTagFromInput();
+            }
+          });
+          document.getElementById("manage-tags-btn")?.addEventListener("click", () => this.openTagManagerModal());
+
+          // 排序模式切换
+          document.getElementById("sort-default-btn")?.addEventListener("click", () => this.setSortMode("default"));
+          document.getElementById("sort-serial-btn")?.addEventListener("click", () => this.setSortMode("serial"));
+
+          // 数据备份 / 恢复
+          document.getElementById("backup-export-btn")?.addEventListener("click", () => this.exportDataBackup());
+          document.getElementById("backup-import-btn")?.addEventListener("click", () => document.getElementById("backup-import-input")?.click());
+          document.getElementById("backup-import-input")?.addEventListener("change", (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (file) this.importDataBackup(file);
+            e.target.value = "";
           });
 
           // 礼簿点击事件
@@ -4311,6 +4498,7 @@
                   recorder: recorder,
                   minSpeechAmount: 0,
                   coverType,
+                  tags: ["贺礼"],
                   printOptions: {
                     ...DEFAULT_PRINT_OPTIONS,
                     pdfEngine,
@@ -4337,9 +4525,244 @@
         }
 
         /**
+         * HTML 转义工具
+         */
+        escapeHtml(s) {
+          return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+        }
+
+        /**
+         * 确保当前事项存在标签数组（向后兼容旧数据）
+         */
+        ensureEventTags() {
+          if (!this.currentEvent) return;
+          if (!Array.isArray(this.currentEvent.tags)) this.currentEvent.tags = [];
+        }
+
+        /**
+         * 渲染录入区标签选择器
+         */
+        renderEntryTagChips() {
+          const container = document.getElementById("tag-chips");
+          if (!container || !this.currentEvent) return;
+          this.ensureEventTags();
+          const selected = this._selectedTags || [];
+          const tags = this.currentEvent.tags || [];
+          if (tags.length === 0) {
+            container.innerHTML = '<span class="text-xs text-gray-400">暂无标签，点击下方“添加标签”创建</span>';
+            return;
+          }
+          container.innerHTML = tags
+            .map((t) => {
+              const isSel = selected.includes(t);
+              return `<span class="entry-tag${isSel ? " selected" : ""}" data-tag="${this.escapeHtml(t)}">${this.escapeHtml(t)}</span>`;
+            })
+            .join("");
+        }
+
+        /**
+         * 切换录入区标签选中状态
+         */
+        toggleEntryTag(tag) {
+          if (!this._selectedTags) this._selectedTags = [];
+          const idx = this._selectedTags.indexOf(tag);
+          if (idx >= 0) this._selectedTags.splice(idx, 1);
+          else this._selectedTags.push(tag);
+          this.renderEntryTagChips();
+        }
+
+        /**
+         * 从录入区输入框新增标签（自动选中并持久化）
+         */
+        async addNewTagFromInput() {
+          const input = document.getElementById("new-tag-input");
+          if (!input) return;
+          const tag = input.value.trim();
+          if (!tag) return;
+          this.ensureEventTags();
+          if (this.currentEvent.tags.includes(tag)) {
+            if (!this._selectedTags.includes(tag)) this._selectedTags.push(tag);
+            input.value = "";
+            this.renderEntryTagChips();
+            return;
+          }
+          this.currentEvent.tags.push(tag);
+          this._selectedTags.push(tag);
+          try {
+            await this.giftRepository.updateEvent(this.currentEvent);
+          } catch (e) {
+            console.error("保存标签失败", e);
+          }
+          input.value = "";
+          this.renderEntryTagChips();
+          this.ui.showNotification(`已添加标签“${tag}”`, "success");
+        }
+
+        /**
+         * 打开标签管理弹窗（自由增删标签）
+         */
+        async openTagManagerModal() {
+          this.ensureEventTags();
+          const renderManager = () => {
+            const items = (this.currentEvent.tags || [])
+              .map(
+                (t) => `
+                <div class="manage-tag-item">
+                  <span>${this.escapeHtml(t)}</span>
+                  <button type="button" class="text-red-600 text-sm hover:underline" data-del-tag="${this.escapeHtml(t)}">删除</button>
+                </div>`
+              )
+              .join("");
+            const html = `
+              <div class="space-y-3 text-left">
+                <p class="text-sm text-gray-500">此处管理的标签会显示在录入区的“标签”选择器中，可自由增删。删除标签仅从选项列表移除，已记录礼簿中该标签仍会保留。</p>
+                <div id="manage-tag-list">${items || '<p class="text-sm text-gray-400">暂无标签</p>'}</div>
+                <div class="flex items-center gap-2 pt-2 border-t">
+                  <input type="text" id="manage-new-tag" placeholder="输入新标签名称" class="flex-1 p-2 border rounded-lg themed-ring" />
+                  <button type="button" id="manage-add-tag" class="themed-button-primary px-4 py-2 rounded-lg text-sm">添加</button>
+                </div>
+              </div>`;
+            this.ui.showModal("管理标签", html, [{ text: "完成", class: "themed-button-secondary border px-4 py-2 rounded" }]);
+            setTimeout(() => {
+              const newInput = document.getElementById("manage-new-tag");
+              const addBtn = document.getElementById("manage-add-tag");
+              newInput?.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") addBtn?.click();
+              });
+              addBtn?.addEventListener("click", async () => {
+                const val = newInput?.value.trim();
+                if (!val) return;
+                this.ensureEventTags();
+                if (!this.currentEvent.tags.includes(val)) {
+                  this.currentEvent.tags.push(val);
+                  try {
+                    await this.giftRepository.updateEvent(this.currentEvent);
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }
+                this.renderEntryTagChips();
+                renderManager();
+              });
+              document.querySelectorAll("[data-del-tag]").forEach((btn) => {
+                btn.addEventListener("click", async () => {
+                  const t = btn.getAttribute("data-del-tag");
+                  this.currentEvent.tags = this.currentEvent.tags.filter((x) => x !== t);
+                  this._selectedTags = (this._selectedTags || []).filter((x) => x !== t);
+                  try {
+                    await this.giftRepository.updateEvent(this.currentEvent);
+                  } catch (e) {
+                    console.error(e);
+                  }
+                  this.renderEntryTagChips();
+                  renderManager();
+                });
+              });
+            }, 50);
+          };
+          renderManager();
+        }
+
+        /**
          * 处理礼金录入表单提交
          * 验证输入并检查重复信息后给出确认提示
          */
+        /**
+         * 切换排序模式
+         * @param {string} mode - "serial" 按序号从小到大；"default" 恢复默认（等级）排序
+         */
+        setSortMode(mode) {
+          this.sortMode = mode === "serial" ? "serial" : "default";
+          if (this.sortMode === "serial") {
+            this.giftManager.sortGiftsBySerial();
+          } else {
+            this.giftManager.sortGiftsByLevel();
+          }
+          this.currentPage = 1;
+          this.giftManager.ensureCurrentPageDecrypted();
+          this.giftManager.render();
+          this.guestScreenService.syncToGuestScreen();
+          // 更新按钮高亮状态
+          const defaultBtn = document.getElementById("sort-default-btn");
+          const serialBtn = document.getElementById("sort-serial-btn");
+          const activeClass = ["ring-2", "themed-ring", "font-bold"];
+          defaultBtn?.classList.toggle("ring-2", this.sortMode === "default");
+          defaultBtn?.classList.toggle("themed-ring", this.sortMode === "default");
+          defaultBtn?.classList.toggle("font-bold", this.sortMode === "default");
+          serialBtn?.classList.toggle("ring-2", this.sortMode === "serial");
+          serialBtn?.classList.toggle("themed-ring", this.sortMode === "serial");
+          serialBtn?.classList.toggle("font-bold", this.sortMode === "serial");
+          this.ui.showNotification(this.sortMode === "serial" ? "已按序号从小到大排序。" : "已恢复默认排序。", "info");
+        }
+
+        /**
+         * 导出整本数据备份（events + gifts）为 JSON 文件
+         */
+        async exportDataBackup() {
+          try {
+            const events = await this.dbManager.getAll("events");
+            const gifts = await this.dbManager.getAll("gifts");
+            const backup = {
+              app: "电子礼簿",
+              version: 1,
+              exportedAt: new Date().toISOString(),
+              events,
+              gifts,
+            };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            const safeName = (this.currentEvent?.name || "礼簿").replace(/[\\/:*?"<>|]/g, "_");
+            a.href = url;
+            a.download = `电子礼簿备份_${safeName}_${new Date().toLocaleDateString("zh-CN").replace(/\//g, "-")}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            this.ui.showNotification(`已导出备份：${events.length} 个事项、${gifts.length} 条记录`, "success");
+          } catch (err) {
+            console.error("导出备份失败:", err);
+            this.ui.showNotification("导出备份失败，请重试。", "error");
+          }
+        }
+
+        /**
+         * 从 JSON 文件导入备份（按 id 合并，已存在的记录不会重复添加）
+         */
+        async importDataBackup(file) {
+          try {
+            const text = await file.text();
+            const backup = JSON.parse(text);
+            if (!backup || !Array.isArray(backup.events) || !Array.isArray(backup.gifts)) {
+              this.ui.showNotification("文件格式不正确，无法导入。", "error");
+              return;
+            }
+            const existingEvents = await this.dbManager.getAll("events");
+            const existingEventIds = new Set(existingEvents.map((e) => e.id));
+            let addedEvents = 0;
+            for (const ev of backup.events) {
+              if (!ev || existingEventIds.has(ev.id)) continue;
+              await this.dbManager.add("events", ev);
+              addedEvents++;
+            }
+
+            const existingGifts = await this.dbManager.getAll("gifts");
+            const existingGiftIds = new Set(existingGifts.map((g) => g.id));
+            let addedGifts = 0;
+            for (const g of backup.gifts) {
+              if (!g || existingGiftIds.has(g.id)) continue;
+              await this.dbManager.add("gifts", g);
+              addedGifts++;
+            }
+
+            this.ui.showNotification(`导入完成：新增 ${addedEvents} 个事项、${addedGifts} 条记录。程序将重新加载以应用。`, "success");
+            setTimeout(() => window.location.reload(), 1200);
+          } catch (err) {
+            console.error("导入备份失败:", err);
+            this.ui.showNotification("导入失败：文件可能已损坏。", "error");
+          }
+        }
+
         async handleAddGift(e) {
           e.preventDefault();
           const name = this.ui.elements.guestNameInput.value.trim();
@@ -4363,19 +4786,28 @@
             this.ui.showNotification("当收款类型为“其他”时，请在备注中说明具体情况。", "error");
             return; // 阻止提交
           }
+
+          // 序号（选填）：留空则保存时自动生成
+          const serialStr = document.getElementById("gift-serial")?.value.trim();
+          const serial = serialStr === "" || serialStr == null ? null : parseInt(serialStr, 10);
+          if (serial !== null && (!Number.isFinite(serial) || serial <= 0)) {
+            this.ui.showNotification("序号请输入正整数，或留空自动生成。", "error");
+            return;
+          }
+
           // 检查重复记录：同名或同名同金额
           const sameNameGifts = this.gifts.filter((g) => g.data?.name === name);
           const exactMatchExists = sameNameGifts.some((g) => g.data?.amount === amount);
 
           // 显示确认对话框（根据重复情况显示不同的警告级别）
-          this.showGiftConfirmationModal(name, amount, remarkData, type, sameNameGifts.length > 0, exactMatchExists);
+          this.showGiftConfirmationModal(name, amount, remarkData, type, sameNameGifts.length > 0, exactMatchExists, serial);
         }
 
         /**
          * 礼金录入确认弹窗
          * 根据重复情况展示提示并允许补充备注
          */
-        showGiftConfirmationModal(name, amount, remarkData, type, nameExists, exactMatchExists) {
+        showGiftConfirmationModal(name, amount, remarkData, type, nameExists, exactMatchExists, serial = null) {
           let modalTitle, modalContent;
           this.ui.elements.giftAmountInput.blur();
           const remarkDisplay = this.formatRemarkDisplay(remarkData);
@@ -4425,7 +4857,7 @@
           const confirmationHandler = () => {
             // 在同名或重复确认的情况下，收集更新后的备注数据
             const finalRemarkData = nameExists || exactMatchExists ? this.collectRemarkData(true) : remarkData;
-            this.saveGift({ name, amount, type, remarkData: finalRemarkData });
+            this.saveGift({ name, amount, type, remarkData: finalRemarkData, tags: [...(this._selectedTags || [])], serial });
           };
 
           this.ui.showModal(modalTitle, modalContent, [
@@ -4466,9 +4898,24 @@
             // 默认等级为 0（雅宾）
             const guestLevel = giftData.guestLevel !== undefined ? giftData.guestLevel : 0;
 
+            // 自定义标签：确保为数组
+            const tags = Array.isArray(giftData.tags) ? giftData.tags : [];
+
+            // 序号：未填写则自动生成（当前最大序号 + 1）
+            let serial = parseInt(giftData.serial, 10);
+            if (!Number.isFinite(serial) || serial <= 0) {
+              serial =
+                this.gifts.reduce((max, g) => {
+                  const s = Number(g.data?.serial);
+                  return Number.isFinite(s) && s > 0 ? Math.max(max, s) : max;
+                }, 0) + 1;
+            }
+
             // timestamp 放入 encryptedData，用于显示创建/修改时间
             const fullGiftData = {
               ...giftData,
+              tags,
+              serial,
               timestamp: new Date().toISOString(),
               guestLevel,
             };
@@ -4494,7 +4941,11 @@
             };
 
             this.gifts.push(newGift);
-            this.giftManager.sortGiftsByLevel();
+            if (this.sortMode === "serial") {
+              this.giftManager.sortGiftsBySerial();
+            } else {
+              this.giftManager.sortGiftsByLevel();
+            }
 
             // 更新缓存
             this.giftManager.updateCacheOnAdd(giftData.amount);
@@ -4509,6 +4960,8 @@
             this.ui.elements.addGiftForm.reset();
             document.querySelector('input[name="payment-type"][value="现金"]').checked = true;
             this.resetRemarkPresets();
+            this._selectedTags = [];
+            if (this.renderEntryTagChips) this.renderEntryTagChips();
             this.ui.elements.guestNameInput.focus();
             this.giftManager.render();
             this.speakGift(giftData.name, giftData.amount);
@@ -4643,6 +5096,7 @@
 
                         <div id="name-display-area" class="flex justify-between items-center p-2 hover:bg-gray-50 rounded ${isAbolished ? "opacity-60" : ""}">
                           <div class="flex items-center gap-3 flex-wrap">
+                            <div><strong>序号:</strong> <span class="ml-1 font-bold themed-text">${g.serial != null && g.serial !== "" && Number.isFinite(Number(g.serial)) ? Number(g.serial) : "（自动）"}</span></div>
                             <div><strong>姓名:</strong> <span class="text-lg ml-2">${g.name}</span></div>
                             ${
                               !isAbolished
@@ -4656,7 +5110,10 @@
                                 : ""
                             }
                           </div>
-                          ${correctNameButtonHtml}
+                          <div class="flex items-center gap-2">
+                            ${!isAbolished ? '<button id="btn-edit-serial" class="text-sm text-blue-600 hover:underline px-2 py-1">改序号</button>' : ""}
+                            ${correctNameButtonHtml}
+                          </div>
                         </div>
 
                         <div id="amount-display-area" class="flex justify-between items-center p-2 hover:bg-gray-50 rounded ${isAbolished ? "opacity-60" : ""}">
@@ -4674,6 +5131,16 @@
                           </div>
                           <div class="mt-1 text-gray-700 space-y-1">
                             ${this.formatRemarkDetailsDisplay(g.remarkData)}
+                          </div>
+                        </div>
+
+                        <div id="tags-display-area" class="p-2 hover:bg-gray-50 rounded ${isAbolished ? "opacity-60" : ""}">
+                          <div class="flex justify-between items-start">
+                            <strong>标签:</strong>
+                            ${!isAbolished ? '<button id="btn-edit-tags" class="text-sm text-blue-600 hover:underline px-2 py-1">修改</button>' : ""}
+                          </div>
+                          <div class="mt-1 flex flex-wrap gap-1">
+                            ${(g.tags && g.tags.length) ? g.tags.map((t) => `<span class="inline-block text-xs px-2 py-0.5 rounded bg-gray-100 border border-gray-200">${this.escapeHtml(t)}</span>`).join("") : '<span class="text-sm text-gray-400">无</span>'}
                           </div>
                         </div>
 
@@ -4731,6 +5198,10 @@
             if (btnCorrectName && !btnCorrectName.disabled) btnCorrectName.onclick = () => this.enableInlineEdit(giftIndex, "name");
             if (btnModifyAmount && !btnModifyAmount.disabled) btnModifyAmount.onclick = () => this.enableInlineEdit(giftIndex, "amount");
             if (btnEditRemarks) btnEditRemarks.onclick = () => this.enableInlineEdit(giftIndex, "remarks");
+            const btnEditTags = document.getElementById("btn-edit-tags");
+            if (btnEditTags) btnEditTags.onclick = () => this.enableInlineEdit(giftIndex, "tags");
+            const btnEditSerial = document.getElementById("btn-edit-serial");
+            if (btnEditSerial) btnEditSerial.onclick = () => this.enableInlineEdit(giftIndex, "serial");
 
             // 绑定宾客等级选择器变化事件
             if (levelSelect) {
@@ -4779,6 +5250,7 @@
               name: { size: 20, color: "#333333", font: "" },
               type: { size: 20, color: isSolemn ? "#374151" : "#cc0000", font: "" },
               amountChinese: { size: 20, color: "#333333", font: "" },
+              serial: { size: 20, color: isSolemn ? "#374151" : "#cc0000", font: "" },
               coverText: { size: 30, color: "#f5d4ab", font: "" },
               pageInfo: {
                 themeColor: isSolemn ? "#1f2937" : "#b91c1c",
@@ -4809,6 +5281,7 @@
             { key: "name", label: "礼簿页姓名", type: "std" },
             { key: "type", label: "礼簿页标签 (礼金/贺礼)", type: "std" },
             { key: "amountChinese", label: "礼簿页（大写金额）", type: "std" },
+            { key: "serial", label: "序号", type: "std" },
             { key: "coverText", label: "封面页标题", type: "std" },
             { key: "pageInfo", label: "基础样式", type: "print-special" }, // 特殊类型
           ];
@@ -4832,7 +5305,7 @@
               const fontSelectHtml = `
                     <div class="flex items-center">
                       <label class="block font-medium text-gray-500 mr-1 whitespace-nowrap">字体</label>
-                      <select data-field="${field}" data-prop="font"
+                      <select data-field="${field}" data-prop="font" onchange="window.__previewStyle&&__previewStyle('${field}','font',this.value)"
                               class="flex-1 w-full p-2 border border-gray-300 rounded themed-ring text-sm bg-white text-gray-700"
                               ${localFonts.length === 0 ? "disabled" : ""}>
                         <option value="">系统默认字体</option>
@@ -4883,14 +5356,14 @@
                       <!-- 字号 -->
                       <div class="flex items-center">
                           <label class="block font-medium text-gray-500 mr-1 whitespace-nowrap">字号 (px)</label>
-                          <input type="number" data-field="${field}" data-prop="size" value="${displaySize}"
+                          <input type="number" data-field="${field}" data-prop="size" value="${displaySize}" oninput="window.__previewStyle&&__previewStyle('${field}','size',this.value)"
                               class="flex-1 w-full p-2 border border-gray-300 rounded themed-ring text-center font-bold text-gray-700 bg-gray-50 focus:bg-white">
                       </div>
                       <!-- 颜色 -->
                       <div class="flex items-center">
                           <label class="block font-medium text-gray-500 mr-1 whitespace-nowrap">颜色</label>
                           <div class="flex flex-1 items-center w-full border border-gray-300 rounded overflow-hidden h-[38px] relative">
-                              <input type="color" data-field="${field}" data-prop="color" value="${displayColor}"
+                              <input type="color" data-field="${field}" data-prop="color" value="${displayColor}" oninput="window.__previewStyle&&__previewStyle('${field}','color',this.value)"
                                   class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                               <div class="color-preview w-8 h-full border-r border-gray-200" style="background-color: ${displayColor}"></div>
                               <span class="color-text flex-1 text-center text-sm text-gray-600 font-mono bg-white h-full leading-[38px]">
@@ -4911,6 +5384,13 @@
                 </div>`;
             })
             .join("");
+
+          // 实时预览：修改样式立即在主界面生效（点“保存设置”才持久化）
+          window.__previewStyle = function (field, prop, value) {
+            const kebab = field.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+            const v = prop === "size" ? value + "px" : value;
+            document.documentElement.style.setProperty("--custom-" + kebab + "-" + prop, v);
+          };
 
           // === HTML 构建 ===
           // 统一 ID 命名规范： style-cover-* 和 style-bg-*
@@ -5069,7 +5549,7 @@
                   const currentDefaults = getDefaults();
                   const newStyle = { localFonts: this.currentEvent.customStyle?.localFonts || [] };
 
-                  ["coverText", "pageInfo", "name", "type", "amountChinese"].forEach((field) => {
+                  ["coverText", "pageInfo", "name", "type", "amountChinese", "serial"].forEach((field) => {
                     // 收集输入值
                     const fontSel = document.querySelector(`select[data-field="${field}"][data-prop="font"]`);
                     const inputFont = fontSel ? fontSel.value : "";
@@ -5283,7 +5763,7 @@
           root.style.setProperty("--gift-grid-columns", itemsCount.toString());
 
           // === 更新：字段映射与变量应用 ===
-          const stdFields = { name: "name", type: "type", amountChinese: "amount-chinese", coverText: "cover-text" };
+          const stdFields = { name: "name", type: "type", amountChinese: "amount-chinese", serial: "serial", coverText: "cover-text" };
           Object.entries(stdFields).forEach(([field, cssPrefix]) => {
             const cfg = s[field];
             const sizeVar = `--custom-${cssPrefix}-size`;
@@ -5589,6 +6069,91 @@
               }
             }, 50);
 
+            return;
+          } else if (fieldType === "serial") {
+            setInlineButtonsDisabled(true);
+            targetAreaId = "name-display-area";
+            const currentSerial = g.serial != null && g.serial !== "" && Number.isFinite(Number(g.serial)) ? Number(g.serial) : "";
+            editHtml = `
+                      <div class="themed-edit-area">
+                        <label>修改序号</label>
+                        <input type="number" id="inline-edit-serial" value="${currentSerial}" min="1" step="1" class="w-full p-2 border rounded themed-ring mb-2">
+                        <p class="text-xs text-gray-500 mb-2">序号用于“按序号排序”与显示，可设为任意正整数。</p>
+                        <div class="flex justify-end space-x-2">${cancelBtnHtml}${saveBtnHtml}</div>
+                      </div>`;
+            saveHandler = async () => {
+              const input = document.getElementById("inline-edit-serial").value.trim();
+              if (input === "") return cancelHandler();
+              const newSerial = parseInt(input, 10);
+              if (!Number.isFinite(newSerial) || newSerial <= 0) return this.ui.showNotification("请输入正整数序号。", "error");
+              if (newSerial === g.serial) return cancelHandler();
+              const changeLog = `将序号由 "${currentSerial === "" ? "自动" : currentSerial}" 修改为 "${newSerial}"`;
+              await this.giftManager.performUpdate(giftIndex, { serial: newSerial }, changeLog, "remark");
+              // 序号模式下重新排序，保持视图一致
+              if (this.sortMode === "serial") {
+                this.giftManager.sortGiftsBySerial();
+                this.giftManager.render();
+                this.guestScreenService.syncToGuestScreen();
+              }
+            };
+          } else if (fieldType === "tags") {
+            setInlineButtonsDisabled(true);
+            const currentTags = Array.isArray(g.tags) ? [...g.tags] : [];
+            const available = this.currentEvent.tags || [];
+            const tagsModalHtml = `
+              <div class="space-y-3 text-left">
+                <p class="text-sm text-gray-500">点击下方标签进行勾选（可多选），也可输入新标签后添加。</p>
+                <div id="inline-tag-list" class="flex flex-wrap gap-2">
+                  ${available.map((t) => `<span class="entry-tag ${currentTags.includes(t) ? "selected" : ""}" data-tag="${this.escapeHtml(t)}">${this.escapeHtml(t)}</span>`).join("") || '<span class="text-xs text-gray-400">暂无可选标签，可在录入区“管理”中添加</span>'}
+                </div>
+                <div class="flex items-center gap-2 pt-2 border-t">
+                  <input type="text" id="inline-new-tag" placeholder="输入新标签" class="flex-1 p-2 border rounded themed-ring" />
+                  <button type="button" id="inline-add-tag" class="themed-button-primary px-3 py-2 rounded-lg text-sm">添加</button>
+                </div>
+              </div>`;
+            const saveTagsHandler = async () => {
+              const selected = Array.from(document.querySelectorAll("#inline-tag-list .entry-tag.selected")).map((el) => el.dataset.tag);
+              const added = selected.filter((t) => !currentTags.includes(t));
+              const removed = currentTags.filter((t) => !selected.includes(t));
+              const changes = [];
+              if (added.length) changes.push(`添加标签：${added.join("、")}`);
+              if (removed.length) changes.push(`移除标签：${removed.join("、")}`);
+              const changeLog = changes.join("；");
+              if (!changeLog) { this.showGiftDetails(giftIndex); return; }
+              // 若新增了标签，先持久化到事项配置
+              let newTagsAdded = false;
+              added.forEach((t) => { if (!this.currentEvent.tags.includes(t)) { this.currentEvent.tags.push(t); newTagsAdded = true; } });
+              if (newTagsAdded) { try { await this.giftRepository.updateEvent(this.currentEvent); } catch (e) { console.error(e); } }
+              await this.giftManager.performUpdate(giftIndex, { tags: selected }, changeLog, "remark");
+            };
+            this.ui.showModal("修改标签", tagsModalHtml, [
+              { text: "返回详情", class: "themed-button-secondary border px-4 py-2 rounded", role: "secondary", handler: () => this.showGiftDetails(giftIndex), keepOpen: true },
+              { text: "保存", class: "themed-button-primary px-4 py-2 rounded", role: "primary", handler: saveTagsHandler, keepOpen: true },
+            ]);
+            this.ui.elements.modal.classList.remove("modal-large");
+            setTimeout(() => {
+              const listEl = document.getElementById("inline-tag-list");
+              const addInlineTag = () => {
+                const inp = document.getElementById("inline-new-tag");
+                const v = inp?.value.trim();
+                if (!v) return;
+                if (!this.currentEvent.tags.includes(v)) this.currentEvent.tags.push(v);
+                if (!document.querySelector('#inline-tag-list .entry-tag[data-tag="' + this.escapeHtml(v) + '"]')) {
+                  const span = document.createElement("span");
+                  span.className = "entry-tag selected";
+                  span.dataset.tag = v;
+                  span.textContent = v;
+                  listEl?.appendChild(span);
+                }
+                inp.value = "";
+              };
+              listEl?.addEventListener("click", (e) => {
+                const chip = e.target.closest(".entry-tag");
+                if (chip) chip.classList.toggle("selected");
+              });
+              document.getElementById("inline-add-tag")?.addEventListener("click", addInlineTag);
+              document.getElementById("inline-new-tag")?.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addInlineTag(); } });
+            }, 50);
             return;
           }
           const targetArea = document.getElementById(targetAreaId);
